@@ -17,3 +17,5 @@ cargo run --release
 ```
 
 To see a Mandelbrot fractal.
+
+![Screenshot of Mandelbrot fractal](screen.jpg)
