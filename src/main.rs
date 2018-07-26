@@ -4,7 +4,7 @@
 extern crate glium;
 
 use glium::{glutin, Surface};
-use glutin::{ControlFlow, WindowEvent};
+use glutin::{dpi::LogicalSize, ControlFlow, WindowEvent};
 
 const VERTEX_SHADER_SRC: &str = include_str!("vertex_shader.glsl");
 const PIXEL_SHADER_SRC: &str = include_str!("pixel_shader.glsl");
@@ -22,7 +22,7 @@ implement_vertex!(Vertex, position);
 fn main() {
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
-        .with_dimensions(500, 500)
+        .with_dimensions(LogicalSize::new(500., 500.))
         .with_title("Mandelbrot");
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
@@ -40,8 +40,8 @@ fn main() {
 
     events_loop.run_forever(|event| match event {
         glutin::Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Closed => ControlFlow::Break,
-            WindowEvent::Resized(_, _) | WindowEvent::Refresh => {
+            WindowEvent::CloseRequested => ControlFlow::Break,
+            WindowEvent::Resized(_) | WindowEvent::Refresh => {
                 draw(&display, &vertices, &indices, &shaders, &center);
                 ControlFlow::Continue
             }
