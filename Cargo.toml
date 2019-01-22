@@ -4,4 +4,4 @@ version = "0.1.1"
 authors = ["Markus Klein <markus.klein@blue-yonder.com>"]
 
 [dependencies]
-glium = "0.22"
+glium = "0.23.0"
