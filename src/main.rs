@@ -1,10 +1,10 @@
 //! Renders a Mandelbrot fractal using OpenGL
 
-#[macro_use]
-extern crate glium;
-
-use glium::{glutin, Surface};
-use glutin::{dpi::LogicalSize, ControlFlow, WindowEvent};
+use glium::{
+    glutin,
+    glutin::{dpi::LogicalSize, ControlFlow, WindowEvent},
+    implement_vertex, uniform, Surface,
+};
 
 const VERTEX_SHADER_SRC: &str = include_str!("vertex_shader.glsl");
 const PIXEL_SHADER_SRC: &str = include_str!("pixel_shader.glsl");
