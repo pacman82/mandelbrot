@@ -36,13 +36,13 @@ fn main() {
 
     let center = (-0.5f32, 0f32);
 
-    draw(&display, &vertices, &indices, &shaders, &center);
+    draw(&display, &vertices, &indices, &shaders, center);
 
     events_loop.run_forever(|event| match event {
         glutin::Event::WindowEvent { event, .. } => match event {
             WindowEvent::CloseRequested => ControlFlow::Break,
             WindowEvent::Resized(_) | WindowEvent::Refresh => {
-                draw(&display, &vertices, &indices, &shaders, &center);
+                draw(&display, &vertices, &indices, &shaders, center);
                 ControlFlow::Continue
             }
             _ => ControlFlow::Continue,
@@ -62,7 +62,7 @@ fn draw<'i, V, I>(
     vertices: &glium::VertexBuffer<V>,
     indices: I,
     shaders: &glium::Program,
-    center: &(f32, f32),
+    center: (f32, f32),
 ) where
     V: Copy,
     I: Into<glium::index::IndicesSource<'i>>,
@@ -75,7 +75,7 @@ fn draw<'i, V, I>(
             vertices,
             indices,
             shaders,
-            &uniform! { iter: ITERATIONS, center: *center },
+            &uniform! { iter: ITERATIONS, center: center },
             &draw_parameters,
         )
         .unwrap();
