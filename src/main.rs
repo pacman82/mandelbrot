@@ -2,7 +2,7 @@
 
 use glium::{
     glutin,
-    glutin::{dpi::LogicalSize, ControlFlow, WindowEvent},
+    glutin::{dpi::LogicalSize, ControlFlow, ElementState, VirtualKeyCode, WindowEvent},
     implement_vertex, uniform, Surface,
 };
 
@@ -34,7 +34,7 @@ fn main() {
     let vertices = glium::VertexBuffer::new(&display, &shape).unwrap();
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
 
-    let center = (-0.5f32, 0f32);
+    let mut center = (-0.5f32, 0f32);
 
     draw(&display, &vertices, &indices, &shaders, center);
 
@@ -45,6 +45,19 @@ fn main() {
                 draw(&display, &vertices, &indices, &shaders, center);
                 ControlFlow::Continue
             }
+            WindowEvent::KeyboardInput { input, .. } => match input.state {
+                ElementState::Pressed => match input.virtual_keycode {
+                    Some(virtual_key_code) => {
+                        let delta = delta_center(virtual_key_code);
+                        center.0 += delta.0 * 0.1;
+                        center.1 += delta.1 * 0.1;
+                        draw(&display, &vertices, &indices, &shaders, center);
+                        ControlFlow::Continue
+                    }
+                    _ => ControlFlow::Continue,
+                },
+                ElementState::Released => ControlFlow::Continue,
+            },
             _ => ControlFlow::Continue,
         },
         _ => ControlFlow::Continue,
@@ -80,4 +93,14 @@ fn draw<'i, V, I>(
         )
         .unwrap();
     target.finish().unwrap();
+}
+
+fn delta_center(vkc: VirtualKeyCode) -> (f32, f32) {
+    match vkc {
+        VirtualKeyCode::Up => (0., 1.),
+        VirtualKeyCode::Down => (0., -1.),
+        VirtualKeyCode::Left => (-1., 0.),
+        VirtualKeyCode::Right => (1., 0.),
+        _ => (0., 0.),
+    }
 }
