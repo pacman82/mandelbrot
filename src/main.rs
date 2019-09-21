@@ -34,24 +34,22 @@ fn main() {
     let vertices = glium::VertexBuffer::new(&display, &shape).unwrap();
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
 
-    let mut center = (-0.5f32, 0f32);
+    let mut cam = Camera::new();
 
-    draw(&display, &vertices, &indices, &shaders, center);
+    draw(&display, &vertices, &indices, &shaders, cam.inv_view());
 
     events_loop.run_forever(|event| match event {
         glutin::Event::WindowEvent { event, .. } => match event {
             WindowEvent::CloseRequested => ControlFlow::Break,
             WindowEvent::Resized(_) | WindowEvent::Refresh => {
-                draw(&display, &vertices, &indices, &shaders, center);
+                draw(&display, &vertices, &indices, &shaders, cam.inv_view());
                 ControlFlow::Continue
             }
             WindowEvent::KeyboardInput { input, .. } => match input.state {
                 ElementState::Pressed => match input.virtual_keycode {
                     Some(virtual_key_code) => {
-                        let delta = delta_center(virtual_key_code);
-                        center.0 += delta.0 * 0.1;
-                        center.1 += delta.1 * 0.1;
-                        draw(&display, &vertices, &indices, &shaders, center);
+                        cam.track(virtual_key_code);
+                        draw(&display, &vertices, &indices, &shaders, cam.inv_view());
                         ControlFlow::Continue
                     }
                     _ => ControlFlow::Continue,
@@ -75,7 +73,7 @@ fn draw<'i, V, I>(
     vertices: &glium::VertexBuffer<V>,
     indices: I,
     shaders: &glium::Program,
-    center: (f32, f32),
+    inv_view: [[f32; 3]; 3]
 ) where
     V: Copy,
     I: Into<glium::index::IndicesSource<'i>>,
@@ -88,19 +86,52 @@ fn draw<'i, V, I>(
             vertices,
             indices,
             shaders,
-            &uniform! { iter: ITERATIONS, center: center },
+            &uniform! { iter: ITERATIONS, inv_view: inv_view },
             &draw_parameters,
         )
         .unwrap();
     target.finish().unwrap();
 }
 
-fn delta_center(vkc: VirtualKeyCode) -> (f32, f32) {
-    match vkc {
-        VirtualKeyCode::Up => (0., 1.),
-        VirtualKeyCode::Down => (0., -1.),
-        VirtualKeyCode::Left => (-1., 0.),
-        VirtualKeyCode::Right => (1., 0.),
-        _ => (0., 0.),
+struct Camera {
+    pos_x : f32,
+    pos_y : f32,
+    zoom: f32,
+}
+
+impl Camera {
+    pub fn new() -> Self{
+        Camera {
+            pos_x : -0.5,
+            pos_y : 0.0,
+            zoom: 1.0,
+        }
+    }
+
+    pub fn inv_view(&self) -> [[f32;3];3] {
+        // Inverse view matrix, transforms from canvas space, to the space of the coordinate system.
+        [
+            [1. / self.zoom, 0., 0.],
+            [0., 1. / self.zoom, 0.],
+            [self.pos_x, self.pos_y, 1.],
+        ]
+    }
+
+    pub fn track(&mut self, vkc: VirtualKeyCode) {
+        match vkc {
+            VirtualKeyCode::Period => self.zoom /= 1.02,
+            VirtualKeyCode::Comma => self.zoom *= 1.02,
+            _ => ()
+        };
+
+        let trans = match vkc {
+            VirtualKeyCode::Up => (0., 1.),
+            VirtualKeyCode::Down => (0., -1.),
+            VirtualKeyCode::Left => (-1., 0.),
+            VirtualKeyCode::Right => (1., 0.),
+            _ => (0., 0.)
+        };
+        self.pos_x += trans.0 * 0.1 / self.zoom;
+        self.pos_y += trans.1 * 0.1 / self.zoom;
     }
 }
