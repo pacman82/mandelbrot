@@ -7,7 +7,7 @@ uniform int iter;
 
 void main() {
 
-    vec2 z = c;
+    vec2 z = vec2(0.0, 0.0);
 
     int i;
     for (i=iter; i != 0; i--){

@@ -5,9 +5,11 @@ use glium::{
     glutin::{dpi::LogicalSize, ControlFlow, ElementState, VirtualKeyCode, WindowEvent},
     implement_vertex, uniform, Surface,
 };
+use std::cmp::{max, min};
 
 const VERTEX_SHADER_SRC: &str = include_str!("vertex_shader.glsl");
-const PIXEL_SHADER_SRC: &str = include_str!("pixel_shader.glsl");
+const MANDELBROT_PIXEL_SHADER_SRC: &str = include_str!("mandelbrot.glsl");
+const JULIA_PIXEL_SHADER_SRC: &str = include_str!("julia.glsl");
 
 // The number of iterations used to determine if `c` converges.
 const ITERATIONS: i32 = 256;
@@ -20,6 +22,7 @@ struct Vertex {
 implement_vertex!(Vertex, position);
 
 fn main() {
+    let mut iterations = ITERATIONS;
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
         .with_dimensions(LogicalSize::new(500., 500.))
@@ -27,8 +30,12 @@ fn main() {
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
-    let shaders =
-        glium::Program::from_source(&display, VERTEX_SHADER_SRC, PIXEL_SHADER_SRC, None).unwrap();
+    let mandlebrot_shaders =
+        glium::Program::from_source(&display, VERTEX_SHADER_SRC, MANDELBROT_PIXEL_SHADER_SRC, None).unwrap();
+    let julia_shaders =
+        glium::Program::from_source(&display, VERTEX_SHADER_SRC, JULIA_PIXEL_SHADER_SRC, None).unwrap();
+
+    let mut current_shaders = &mandlebrot_shaders;
 
     let shape = rect();
     let vertices = glium::VertexBuffer::new(&display, &shape).unwrap();
@@ -36,20 +43,40 @@ fn main() {
 
     let mut cam = Camera::new();
 
-    draw(&display, &vertices, &indices, &shaders, cam.inv_view());
+    draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
 
     events_loop.run_forever(|event| match event {
         glutin::Event::WindowEvent { event, .. } => match event {
             WindowEvent::CloseRequested => ControlFlow::Break,
             WindowEvent::Resized(_) | WindowEvent::Refresh => {
-                draw(&display, &vertices, &indices, &shaders, cam.inv_view());
+                draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
                 ControlFlow::Continue
             }
             WindowEvent::KeyboardInput { input, .. } => match input.state {
                 ElementState::Pressed => match input.virtual_keycode {
+                    Some(VirtualKeyCode::Add) => {
+                        iterations *= 2;
+                        draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
+                        ControlFlow::Continue
+                    }
+                    Some(VirtualKeyCode::Subtract) => {
+                        iterations /= 2;
+                        draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
+                        ControlFlow::Continue
+                    }
+                    Some(VirtualKeyCode::M) => {
+                        current_shaders = &mandlebrot_shaders;
+                        draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
+                        ControlFlow::Continue
+                    }
+                    Some(VirtualKeyCode::J) => {
+                        current_shaders = &julia_shaders;
+                        draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
+                        ControlFlow::Continue
+                    }
                     Some(virtual_key_code) => {
                         cam.track(virtual_key_code);
-                        draw(&display, &vertices, &indices, &shaders, cam.inv_view());
+                        draw(&display, &vertices, &indices, current_shaders, iterations, cam.inv_view());
                         ControlFlow::Continue
                     }
                     _ => ControlFlow::Continue,
@@ -73,6 +100,7 @@ fn draw<'i, V, I>(
     vertices: &glium::VertexBuffer<V>,
     indices: I,
     shaders: &glium::Program,
+    iterations: i32,
     inv_view: [[f32; 3]; 3]
 ) where
     V: Copy,
@@ -86,7 +114,7 @@ fn draw<'i, V, I>(
             vertices,
             indices,
             shaders,
-            &uniform! { iter: ITERATIONS, inv_view: inv_view },
+            &uniform! { iter: iterations, inv_view: inv_view },
             &draw_parameters,
         )
         .unwrap();
