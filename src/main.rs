@@ -5,7 +5,6 @@ use glium::{
     glutin::{dpi::LogicalSize, ControlFlow, ElementState, VirtualKeyCode, WindowEvent},
     implement_vertex, uniform, Surface,
 };
-use std::cmp::{max, min};
 
 const VERTEX_SHADER_SRC: &str = include_str!("vertex_shader.glsl");
 const MANDELBROT_PIXEL_SHADER_SRC: &str = include_str!("mandelbrot.glsl");
